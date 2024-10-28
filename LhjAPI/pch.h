@@ -20,7 +20,8 @@ using std::make_pair;
 using std::string;
 using std::wstring;
 
-#include "define.h"
+#include "global.h"
+
 
 
 

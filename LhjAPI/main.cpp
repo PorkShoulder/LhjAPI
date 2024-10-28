@@ -22,7 +22,11 @@ int APIENTRY wWinMain( HINSTANCE hInstance,     // 프로세스 주소 ID 프로
                        HINSTANCE hPrevInstance, // 안쓰이는 인자 (이전주소) 
                        LPWSTR    lpCmdLine,
                        int       nCmdShow)
-{ // 윈도우 옵션설정
+{
+    g_hInst = hInstance; // 프로세스 시작 주소
+
+
+    // 윈도우 옵션설정
     WNDCLASSEXW wcex = {};                  //프로그램 시작시 나오는 창을 설정하는 것들.
     wcex.cbSize                 = sizeof(WNDCLASSEX);
     wcex.style                  = CS_HREDRAW | CS_VREDRAW;
@@ -39,26 +43,14 @@ int APIENTRY wWinMain( HINSTANCE hInstance,     // 프로세스 주소 ID 프로
     
     RegisterClassExW(&wcex); // 위에 설정을 다 했으면 레지스터로 등록을 함. 
 
-    g_hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
+    g_hInst = hInstance; // 프로세스 시작 주소
 
 
-    // HWND : 윈도우의 ID를 받을 수 있는 것. 윈도우에서 제공하는 함수를 통해서 조작해야됨. 
-    // 커널 오브젝트 : (os 차원에서 관리되는 객체)  
-    HWND hWnd = CreateWindowW(L"Key" , L"Isaac", WS_OVERLAPPEDWINDOW,  // 등록한 설정을 찾아와서 그 정보를 기반으로 윈도우를 만든다. 
-        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
-
-
-
-    if (!hWnd)
-    {
-        return FALSE;
-    }
-    
-    
-    ShowWindow(hWnd, nCmdShow); 
-    UpdateWindow(hWnd);
+   
    
     //Engine 초기화
+     if (FAILED(CEngine::GetInst()->Init(g_hInst, POINT{ 1280, 768 })))
+        return FALSE;
 
 
 
@@ -98,9 +90,6 @@ int APIENTRY wWinMain( HINSTANCE hInstance,     // 프로세스 주소 ID 프로
     return (int)msg.wParam;
 }
 
-
-
-//
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
   
