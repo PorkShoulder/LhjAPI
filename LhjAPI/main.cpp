@@ -1,5 +1,4 @@
-﻿
-#include "framework.h"
+﻿#include "pch.h"
 
 #include "LhjAPI.h"
 #include "CEngine.h"
@@ -48,15 +47,21 @@ int APIENTRY wWinMain( HINSTANCE hInstance,     // 프로세스 주소 ID 프로
     HWND hWnd = CreateWindowW(L"Key" , L"Isaac", WS_OVERLAPPEDWINDOW,  // 등록한 설정을 찾아와서 그 정보를 기반으로 윈도우를 만든다. 
         CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
+
+
     if (!hWnd)
     {
         return FALSE;
     }
     
-    SetWindowPos(hWnd, nullptr, 10, 10, 1280, 768, 0);
+    
     ShowWindow(hWnd, nCmdShow); 
     UpdateWindow(hWnd);
    
+    //Engine 초기화
+
+
+
     // 단축키 테이블
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_LHJAPI));
 
@@ -78,7 +83,7 @@ int APIENTRY wWinMain( HINSTANCE hInstance,     // 프로세스 주소 ID 프로
             if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
             {
                 TranslateMessage(&msg);
-                DispatchMessage(&msg);
+                DispatchMessage(&msg); 
             }
         }
 
