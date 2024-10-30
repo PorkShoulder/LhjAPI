@@ -1,89 +1,168 @@
 #include "pch.h"
 #include "CEngine.h"
 
+#include "CAssetMgr.h"
+#include "CPathMgr.h"
+#include "CTimeMgr.h"
+#include "CKeyMgr.h"
+#include "CLevelMgr.h"
+#include "CTaskMgr.h"
+#include "CDbgRender.h"
+#include "CCollisionMgr.h"
+#include "CSelectGDI.h"
+#include "CCamera.h"
+#include "CUIMgr.h"
+#include "CSoundMgr.h"
+
 CEngine::CEngine()
-	: m_hInst(nullptr)
-	, m_hWnd(nullptr) // 초기화 리스트 멤버의 초기값을 생성자 생성전에 원하는 값으로 초기화시킴.
-	, m_Resolution{}
-	, m_hDC(nullptr)
-{
-	// 생성자가 생겨날시 실시되는 코드
-
-
-
+    : m_hInst(nullptr)
+    , m_hWnd(nullptr)
+    , m_Resolution{}
+    , m_hDC(nullptr)
+    , m_BackBuffer(nullptr)
+    , m_Pen{}
+    , m_Brush{}
+{   
 }
+
 CEngine::~CEngine()
 {
-	// DC 해제
-	ReleaseDC(m_hWnd, m_hDC);
+    // DC 해제
+    ReleaseDC(m_hWnd, m_hDC);
 
-	// Pen 과 Brush 해제
-	for (UINT i = 0; i < (UINT)PEN_TYPE::END; ++i)
-	{
-		DeleteObject(m_Pen[i]);
-	}
+    // Pen 과 Brush 해제
+    for (UINT i = 0; i < (UINT)PEN_TYPE::END; ++i)
+    {
+        DeleteObject(m_Pen[i]);
+    }
 
-	for (UINT i = 0; i < (UINT)BRUSH_TYPE::END; ++i)
-	{
-		DeleteObject(m_Brush[i]);
-	}
+    for (UINT i = 0; i < (UINT)BRUSH_TYPE::END; ++i)
+    {
+        if (BRUSH_TYPE::HOLLOW == (BRUSH_TYPE)i)
+            continue;
+
+        DeleteObject(m_Brush[i]);
+    }
 }
 
-int CEngine::Init(HINSTANCE _hInst, POINT _Resolution) //초기화 시작히 메인 윈도우 호출및 해상도 정보 받음
+
+int CEngine::Init(HINSTANCE _hInst, POINT _Resolution)
 {
-	//초기화 시 실시되는 코드
+    m_hInst = _hInst;
+    m_Resolution = _Resolution;
 
-	m_hInst = _hInst;
-	m_Resolution = _Resolution;
-	
-	// HWND : 윈도우의 ID를 받을 수 있는 것. 윈도우에서 제공하는 함수를 통해서 조작해야됨. 
-   // 커널 오브젝트 : (os 차원에서 관리되는 객체)  
-	m_hWnd = CreateWindowW(L"Key", L"Isaac", WS_OVERLAPPEDWINDOW,  // 등록한 설정을 찾아와서 그 정보를 기반으로 윈도우를 만든다. 
-		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, m_hInst, nullptr);
+    // HWND 윈도우 ID 타입
+    // 커널 오브젝트 ( OS 차원에서 관리되는 객체 )
+    m_hWnd = CreateWindowW(L"Key", L"MyGame", (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX),
+        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, m_hInst, nullptr);
+
+    if (!m_hWnd)   
+        return E_FAIL;
+    
+    ShowWindow(m_hWnd, true);
+    UpdateWindow(m_hWnd);
+
+    // 윈도우 크기를 해상도에 맞게 설정
+    ChangeWindowSize(m_Resolution);
+
+    // DC 생성   
+    m_hDC = GetDC(m_hWnd);
+
+    // GDIObject 생성
+    CreateGDIObject();    
+  
+    // Manager 생성 및 초기화
+    CPathMgr::Init();
+    CSoundMgr::GetInst()->Init();    
+    CTimeMgr::GetInst()->Init();
+    CKeyMgr::GetInst()->Init();
+    CAssetMgr::GetInst()->Init();
+    CLevelMgr::GetInst()->Init();
+    CCamera::GetInst()->Init();
+    
+
+    // 더블버퍼링을 위한 추가버퍼 생성
+    CreateSecondBuffer();
 
 
-
-	if (!m_hWnd)
-		return E_FAIL;
-
-
-	
-	ShowWindow(m_hWnd, true);
-	UpdateWindow(m_hWnd);
-	
-	// 윈도우 크기 설정, 위치 설정
-	SetWindowPos(m_hWnd, nullptr, 10, 10, m_Resolution.x, m_Resolution.y, 0);
-
-	//DC생성
-	//- 그릴곳 필요함. 목적지-> 윈도우 입력 이렇게 생성된것을 멤버 DC의 핸들값으로 받음 이떄는 ID로 받음 커널오브젝트라서
-	// 흰,검정 펜을 기본으로 가져고있음. 
-	
-	m_hDC = GetDC(m_hWnd);
-	HPEN hRedPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0)); // 펜 스타일,두께 색상
-	HPEN hPrevPen = (HPEN)(SelectObject(m_hDC, hRedPen));
-
-
-	SelectObject(m_hDC, hPrevPen);
-	DeleteObject(hRedPen);
-
-
-	return S_OK;
-}
-
-void CEngine::Progress() //게임 코드 여기서 작성됨 매니저 호출예정
-{
-
+    return S_OK;
 }
 
 void CEngine::CreateGDIObject()
 {
-	// Pen
-	m_Pen[(UINT)PEN_TYPE::RED] = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
-	m_Pen[(UINT)PEN_TYPE::GREEN] = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));
-	m_Pen[(UINT)PEN_TYPE::BLUE] = CreatePen(PS_SOLID, 1, RGB(0, 0, 255));
+    // Pen
+    m_Pen[(UINT)PEN_TYPE::RED] = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
+    m_Pen[(UINT)PEN_TYPE::GREEN] = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));
+    m_Pen[(UINT)PEN_TYPE::BLUE] = CreatePen(PS_SOLID, 1, RGB(0, 0, 255));
 
-	// Brush
-	m_Brush[(UINT)BRUSH_TYPE::RED] = CreateSolidBrush(RGB(255, 0, 0));
-	m_Brush[(UINT)BRUSH_TYPE::GREEN] = CreateSolidBrush(RGB(0, 255, 0));
-	m_Brush[(UINT)BRUSH_TYPE::BLUE] = CreateSolidBrush(RGB(0, 0, 255));
+    // Brush
+    m_Brush[(UINT)BRUSH_TYPE::RED]      = CreateSolidBrush(RGB(255, 0, 0));
+    m_Brush[(UINT)BRUSH_TYPE::GREEN]    = CreateSolidBrush(RGB(0, 255, 0));
+    m_Brush[(UINT)BRUSH_TYPE::BLUE]     = CreateSolidBrush(RGB(0, 0, 255));
+    m_Brush[(UINT)BRUSH_TYPE::GRAY]     = CreateSolidBrush(RGB(100, 100, 100));
+    m_Brush[(UINT)BRUSH_TYPE::HOLLOW]   = (HBRUSH)GetStockObject(HOLLOW_BRUSH);
+}
+
+
+
+void CEngine::Progress()
+{
+    // Manager Tick
+    CTimeMgr::GetInst()->Tick(); // DT 계산
+    CKeyMgr::GetInst()->Tick();  // 각 키의 상태
+    CDbgRender::GetInst()->Tick();
+    CCamera::GetInst()->Tick();
+
+    // 레벨 실행
+    CLevelMgr::GetInst()->Progress();
+
+    // 충돌 검사 실행
+    CCollisionMgr::GetInst()->Tick();
+
+    // UI 매니저 체크
+    CUIMgr::GetInst()->Tick();
+
+
+    // 렌더링
+    // 화면 클리어
+    {
+        SELECT_BRUSH(BRUSH_TYPE::GRAY);
+        Rectangle(m_BackBuffer->GetDC(), -1, -1, (int)m_Resolution.x + 1, (int)m_Resolution.y + 1);
+    }
+
+    // 레벨 렌더링
+    CLevelMgr::GetInst()->Render();
+
+    // Camera 렌더링
+    CCamera::GetInst()->Render();
+
+    // 디버그 정보 렌더링
+    CDbgRender::GetInst()->Render();
+
+    // SecondBitmap 있는 장면을 MainWindowBitmap 으로 복사해온다.
+    BitBlt(m_hDC, 0, 0, (int)m_Resolution.x, (int)m_Resolution.y
+        , m_BackBuffer->GetDC(), 0, 0, SRCCOPY);
+
+    // TaskMgr 동작
+    CTaskMgr::GetInst()->Tick();
+}
+
+
+void CEngine::ChangeWindowSize(Vec2 _vResolution)
+{
+    m_Resolution = _vResolution;   
+
+    RECT rt = { 0, 0, m_Resolution.x, m_Resolution.y };
+
+    // 메인윈도우가 Menu 가 있는지 확인
+    HMENU hMenu = GetMenu(m_hWnd);
+
+    AdjustWindowRect(&rt, WS_OVERLAPPEDWINDOW, !!hMenu);
+
+    SetWindowPos(m_hWnd, nullptr, 0, 0, rt.right - rt.left, rt.bottom - rt.top, 0);
+}
+
+void CEngine::CreateSecondBuffer()
+{
+    m_BackBuffer = CAssetMgr::GetInst()->CreateTexture(L"BackBuffer", (int)m_Resolution.x, (int)m_Resolution.y);
 }

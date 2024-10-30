@@ -3,7 +3,7 @@
 
 UINT CBase::g_NextID = 0;
 
-CBase::CBase()
+CBase::CBase()		
 	: m_ID(g_NextID++)
 {
 }

@@ -1,14 +1,11 @@
 #pragma once
-// 기초가 될 케이스 매니저를 제외한 모든 클래스는 베이스에서 파생시킴.
-// 다형성을 이용해서 모든 포인터르 가리킬수 있음. 
-// 상속을 목적으로 단독객체 만들일은 없음 -> 추상클래스 
 
 class CBase
 {
 private:
 	static UINT g_NextID;
 
-private:
+private:	
 	wstring		m_Name;
 	const UINT	m_ID;
 

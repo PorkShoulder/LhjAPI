@@ -3,71 +3,58 @@
 #include "LhjAPI.h"
 #include "CEngine.h"
 
-
-
-// 전역 변수:
-HINSTANCE g_hInst = nullptr;                         // 현재 인스턴스입니다. HINSTANCE(=HINSTANCE__*) : 매크로를 통한 구조체가 만들어지고 구조체 포인터를 타입 재정의 한것임.
+HINSTANCE g_hInst = nullptr;
 HWND      g_hDlg = nullptr;
 
-
-
-
-// 함수 전방선언
-BOOL                InitInstance(HINSTANCE, int);
+// 전역 변수
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
-//SAL : 주석 언어 
-int APIENTRY wWinMain( HINSTANCE hInstance,     // 프로세스 주소 ID 프로그램 시작주소
-                       HINSTANCE hPrevInstance, // 안쓰이는 인자 (이전주소) 
-                       LPWSTR    lpCmdLine,
-                       int       nCmdShow)
-{
-    g_hInst = hInstance; // 프로세스 시작 주소
 
-
-    // 윈도우 옵션설정
-    WNDCLASSEXW wcex = {};                  //프로그램 시작시 나오는 창을 설정하는 것들.
-    wcex.cbSize                 = sizeof(WNDCLASSEX);
-    wcex.style                  = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc            = &WndProc;
-    wcex.cbClsExtra             = 0;
-    wcex.cbWndExtra             = 0;
-    wcex.hInstance              = hInstance;
-    wcex.hIcon                  = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_LHJAPI));
-    wcex.hCursor                = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground          = (HBRUSH)(COLOR_WINDOW + 1);
-    wcex.lpszMenuName           = MAKEINTRESOURCEW(IDC_LHJAPI);
-    wcex.lpszClassName          = L"Key";
-    wcex.hIconSm                = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-    
-    RegisterClassExW(&wcex); // 위에 설정을 다 했으면 레지스터로 등록을 함. 
+// SAL : 주석 언어
+int APIENTRY wWinMain(HINSTANCE hInstance   // 프로세스 주소(ID)
+                    , HINSTANCE hPrevInstance // 안쓰이는 인자
+                    , LPWSTR lpCmdLine
+                    , int   nCmdShow)
+{    
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    //_CrtSetBreakAlloc(18);
 
     g_hInst = hInstance; // 프로세스 시작 주소
 
+    WNDCLASSEXW wcex = {};
 
-   
-   
-    //Engine 초기화
-     if (FAILED(CEngine::GetInst()->Init(g_hInst, POINT{ 1280, 768 })))
+    wcex.cbSize         = sizeof(WNDCLASSEX);
+    wcex.style          = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc    = &WndProc;
+    wcex.cbClsExtra     = 0;
+    wcex.cbWndExtra     = 0;
+    wcex.hInstance      = hInstance;
+    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_LHJAPI));
+    wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
+    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.lpszMenuName   = nullptr;// MAKEINTRESOURCEW(IDC_WINAPI);
+    wcex.lpszClassName  = L"Key";
+    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+
+    RegisterClassExW(&wcex);
+
+    // Engine 초기화
+    if (FAILED(CEngine::GetInst()->Init(g_hInst, POINT{ 1280, 768 })))
         return FALSE;
 
 
-
-    // 단축키 테이블
+    // 단축키 테이블 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_LHJAPI));
 
-    //메세지 변수 선언 
+    // 메시지 변수
     MSG msg = {};
-
-
-    // 기본 메시지 루프입니다: 선언된 메세지 받아옴 
-
+    
     while (true)
-    {
+    {        
         // 메세지큐에 메세지가 있다.
         if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-        {
+        {          
             if (WM_QUIT == msg.message)
                 break;
 
@@ -75,38 +62,24 @@ int APIENTRY wWinMain( HINSTANCE hInstance,     // 프로세스 주소 ID 프로
             if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
             {
                 TranslateMessage(&msg);
-                DispatchMessage(&msg); 
+                DispatchMessage(&msg);
             }
         }
 
         // 메세지큐에 메세지가 없다.
         else
-        {
+        {          
             // 게임 실행, 1 프레임
-           CEngine::GetInst()->Progress();
-        }
+            CEngine::GetInst()->Progress();
+        }              
     }
 
-    return (int)msg.wParam;
+    return (int) msg.wParam;
 }
 
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
-{
-  
 
-   return TRUE;
-}
+bool EditorMenu(HINSTANCE _inst, HWND _wnd, int wParam);
 
-//
-//  함수: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  용도: 주 창의 메시지를 처리합니다.
-//
-//  WM_COMMAND  - 애플리케이션 메뉴를 처리합니다.
-//  WM_PAINT    - 주 창을 그립니다.
-//  WM_DESTROY  - 종료 메시지를 게시하고 반환합니다.
-//
-//
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -114,11 +87,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
+
+            if (EditorMenu(g_hInst, hWnd, wmId))
+            {
+                break;
+            }
+            
             // 메뉴 선택을 구문 분석합니다:
             switch (wmId)
             {
             case IDM_ABOUT:
-                DialogBox(g_hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+                // Modal
+                DialogBox(g_hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, &About);
                 break;
             case IDM_EXIT:
                 DestroyWindow(hWnd);
@@ -132,9 +112,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+            
             EndPaint(hWnd, &ps);
         }
+        break;
+    case WM_MOUSEMOVE: 
+    {
+        int a = 0;
+    }
+        break;
+    case WM_SIZE:
+
+        break;           
+
+    case WM_SIZING:
+
         break;
     case WM_DESTROY:
         PostQuitMessage(0);
